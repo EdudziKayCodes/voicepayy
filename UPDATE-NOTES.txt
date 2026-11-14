@@ -1,0 +1,25 @@
+VOICEPAY TRANSACTION VOICE UPDATE
+
+This package replaces two frontend files in your GitHub repository:
+  static/app.js
+  static/service-worker.js
+
+WHAT CHANGED IN static/app.js
+- Successful approval speaks: "Payment successful. [amount] sent to [recipient]. This was a simulation."
+- A declined/expired/failed approval speaks a clear failure message.
+- Cancelling the device prompt says the payment was not approved and no simulated payment was made.
+- If the server cannot confirm the outcome after approval, it tells the user to check Activity before retrying.
+- Expired tickets and two failed voice phrase attempts announce that the simulated payment was not sent.
+
+Voice announcements follow the existing Voice replies toggle. Turn Voice replies on in the app to hear them.
+
+WHAT CHANGED IN static/service-worker.js
+- Cache name increased to voicepay-shell-v2, so browsers install the updated frontend shell.
+
+DEPLOY
+1. Replace these two files in the repository, preserving the static/ folder.
+2. Commit and push to the main branch.
+3. In the Vultr SSH terminal run:
+   su -s /bin/bash voicepay -c 'git -C /opt/voicepay/current pull --ff-only'
+   systemctl restart voicepay
+   systemctl status voicepay --no-pager

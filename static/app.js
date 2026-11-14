@@ -983,8 +983,7 @@ async function processVoicePhrase(value) {
     say('Phrase matched. Continue with device approval.', 'ok');
   } else if (++app.voicePhraseAttempts >= 2) {
       hideTicket(); try { await api('/api/cancel', {}); } catch (e) {}
-      addMessage('bot', 'Voice phrase did not match twice. Payment cancelled.');
-      say('Payment cancelled after two phrase mismatches.', 'error');
+      botSay('Payment cancelled. The voice phrase did not match twice, so no simulated payment was made.', null, true);
   } else {
     const attempts = app.voicePhraseAttempts; prepareVoicePhrase(); app.voicePhraseAttempts = attempts;
     say('Phrase did not match. New words are ready; try once more.', 'error');
@@ -1033,7 +1032,7 @@ function tick() {
   $('t-timer').textContent = 'Expires in ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
   if (left === 0) {
     hideTicket();
-    addMessage('bot', 'That payment expired. Tell me again if you still want to send it.', true);
+    botSay('Payment expired before approval. It was not sent. Tell me again if you still want to prepare it.', null, true);
   }
 }
 
@@ -1060,13 +1059,19 @@ async function onApprove() {
         const result = await api('/api/approve', { txn_id: txn.txn_id });
         completeReceipt(result.record);
       } catch (recheckError) {
-        say('The connection dropped after approval. Check recent payments before trying again.', 'error');
+        const message = 'I could not confirm the payment result. Check Activity before trying again.';
+        say(message, 'error');
+        botSay(message, null, true);
       }
     } else if (e.data) {
-      say(e.message, 'error');
-      if (e.data.expired) { hideTicket(); addMessage('bot', e.message, true); }
+      const message = 'Payment not completed. ' + (e.message || 'The payment could not be approved.');
+      say(message, 'error');
+      botSay(message, null, true);
+      if (e.data.expired) hideTicket();
     } else {
-      say(webauthnProblem(e), 'error');
+      const message = 'Payment not approved. No simulated payment was made. ' + webauthnProblem(e);
+      say(message, 'error');
+      botSay(message, null, true);
     }
     $('approve').disabled = false;
   } finally {
@@ -1092,7 +1097,7 @@ function completeReceipt(record) {
   app.recentContacts = [record.to, ...app.recentContacts.filter((name) => name !== record.to)].slice(0, 3);
   setChips(startChips());
   say('Payment complete. Keep this reference for your records.', 'ok');
-  botSay('Sent ' + formatMoney(record.amount) + ' to ' + record.to + '. Your receipt is shown above.', null);
+  botSay('Payment successful. ' + formatMoney(record.amount) + ' sent to ' + record.to + '. This was a simulation.', null);
   refresh();
 }
 

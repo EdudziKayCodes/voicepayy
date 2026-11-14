@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'voicepay-shell-v1';
+const CACHE_NAME = 'voicepay-shell-v2';
 const SHELL = [
   '/',
   '/index.html',
