@@ -1,0 +1,22 @@
+[Unit]
+Description=VoicePay Flask application (simulation only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=voicepay
+Group=voicepay
+WorkingDirectory=/opt/voicepay/current
+EnvironmentFile=/etc/voicepay/voicepay.env
+Environment=VOICEPAY_LEDGER_DB=/var/lib/voicepay/voicepay.sqlite3
+Environment=VOICEPAY_DATA_FILE=/var/lib/voicepay/data.json
+ExecStart=/opt/voicepay/venv/bin/gunicorn --workers 1 --threads 4 --timeout 120 --bind 127.0.0.1:8000 app:app
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

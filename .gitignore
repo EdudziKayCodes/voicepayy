@@ -1,0 +1,17 @@
+.env
+deploy/vultr/voicepay.env
+deploy/vultr/firebase-admin.json
+firebase-admin.json
+*service-account*.json
+data.json
+data.tmp
+voicepay.sqlite3
+voicepay.sqlite3-shm
+voicepay.sqlite3-wal
+venv/
+.venv/
+.audit-tools/
+.audit-venv/
+temp/
+__pycache__/
+*.pyc
