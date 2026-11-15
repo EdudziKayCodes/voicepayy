@@ -100,46 +100,39 @@ Important: device approval is tied to one site address. If the tunnel address ch
 `.env`, restart, and register a device again on the new address.
 The free ngrok plan may show a "Visit site" warning page the first time: tap through it once.
 
-## 3b. Deploy on Render
+## 3b. Deploy on Vultr
 
-In the Render dashboard create a **Web Service** from your GitHub repo and use exactly:
+The full step-by-step guide is in [`deploy/vultr/README.md`](deploy/vultr/README.md). In short:
 
 | Setting | Value |
 |---|---|
-| Runtime | Python 3 |
-| Build Command | `pip install -r requirements.txt` |
-| Start Command | `gunicorn app:app --workers 1 --threads 4` |
-| Instance count | 1 (pending approvals and conversations are held in memory) |
+| Server | Vultr Cloud Compute, Ubuntu 24.04 LTS |
+| Web server | Nginx with a Let's Encrypt certificate, forwarding to Gunicorn on `127.0.0.1:8000` |
+| Process manager | `systemd` (`deploy/vultr/voicepay.service`) running `gunicorn app:app --workers 1 --threads 4` |
+| Workers | 1 (pending approvals and conversations are held in memory) |
+| Database | SQLite at `/var/lib/voicepay/voicepay.sqlite3` on the instance's persistent disk |
 
-Use one worker: pending approvals and conversations live in process memory. Verified users have separate simulated balances, histories, country settings, and device credentials in SQLite.
-
-Render's Free web service has an ephemeral filesystem and may spin down or restart. This means the local SQLite users, passkeys, and simulated ledger can be lost, and in-memory pending approvals disappear on restart. Treat Free as a disposable demo only. For persistent data, use a paid persistent disk mounted at `/var/data` and set `VOICEPAY_LEDGER_DB=/var/data/voicepay.sqlite3`, or migrate the app to a managed database before using it with real users. The current app does not use Postgres directly.
-
-Under **Environment** add these variables:
+Secrets live outside GitHub in `/etc/voicepay/voicepay.env` on the server:
 
 | Variable | Value |
 |---|---|
 | `GROQ_API_KEY` | your Groq key |
-| `RP_ID` | your Render address **without** https, for example `voicepay-ab12.onrender.com` |
-| `ORIGIN` | the same address **with** https, for example `https://voicepay-ab12.onrender.com` |
+| `RP_ID` | your domain **without** https, for example `voicepay.example.com` |
+| `ORIGIN` | the same domain **with** https, for example `https://voicepay.example.com` |
 | `SETUP_TOKEN` | optional long random owner secret for private diagnostics |
 | `FIREBASE_API_KEY` | Firebase Web app API key |
 | `FIREBASE_AUTH_DOMAIN` | Firebase Web app auth domain |
 | `FIREBASE_PROJECT_ID` | Firebase project ID |
 | `FIREBASE_APP_ID` | Firebase Web app ID |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | private service account JSON for server-side token verification |
+| `GOOGLE_APPLICATION_CREDENTIALS` | path to the Firebase Admin service-account JSON, e.g. `/etc/voicepay/firebase-admin.json` |
+| `VOICEPAY_LEDGER_DB` | `/var/lib/voicepay/voicepay.sqlite3` |
 | `ALLOW_RESET` | `0` (reset is disabled by default) |
-| `PROXY_FIX_HOPS` | `1` for the single trusted Render proxy |
-| `REDIS_URL` | a Redis connection URL for rate limits shared across workers/instances |
-| `PYTHON_VERSION` | `3.12.3` |
+| `PROXY_FIX_HOPS` | `1` for the single trusted Nginx proxy |
+| `REDIS_URL` | optional Redis URL for rate limits shared across workers |
 
-Your exact address is shown at the top of the service page in Render. Save the variables and let it redeploy.
-`/api/health` is a minimal liveness check for Render. Detailed diagnostics and the optional Groq check are owner-only at `/api/health/details?live=1`; send the setup token in an `Authorization: Bearer ...` header.
+`/api/health` is a minimal liveness check. Detailed diagnostics and the optional Groq check are owner-only at `/api/health/details?live=1`; send the setup token in an `Authorization: Bearer ...` header.
 
-Keep one app worker/instance: pending approvals and conversations are in process memory. Accounts and ledgers are in SQLite, but Render's free filesystem is ephemeral. Use managed Postgres and shared challenge/session storage before running multiple instances or treating account data as durable. Redis shares rate limits. Without `REDIS_URL`, rate limits are in process memory and reset on restart.
-
-Render's free filesystem is ephemeral, so SQLite account, ledger, and device data may be lost after a
-restart or redeploy. Open the site before your demo to wake it and verify sign-in and device setup.
+Keep one app worker: pending approvals and conversations are in process memory. Accounts and ledgers are in SQLite on the Vultr disk; back up the database before upgrades. Use managed Postgres and shared challenge/session storage before running multiple instances or treating account data as durable. Without `REDIS_URL`, rate limits are in process memory and reset on restart.
 
 ## 4. How the conversation works
 

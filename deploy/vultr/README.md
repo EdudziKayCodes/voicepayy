@@ -1,7 +1,5 @@
 # Deploy VoicePay on Vultr
 
-This is a separate deployment path. It does not change `app.py`, the Render Blueprint, or your existing Render service. Keep Render running until the Vultr copy has passed the checks below.
-
 VoicePay is a payment **simulation**. No bank, PayPal, or Paystack transfers are connected.
 
 ## What this deployment uses
@@ -133,7 +131,7 @@ sudo journalctl -u voicepay -n 100 --no-pager
 sudo tail -n 100 /var/log/nginx/error.log
 ```
 
-Register a device on the final HTTPS domain and test a simulated payment. Keep the Render deployment until sign-in, country loading, device registration, approval, and the history page work on Vultr.
+Register a device on the final HTTPS domain and test a simulated payment. Confirm that sign-in, country loading, device registration, approval, and the history page all work.
 
 ## Updating the app
 
